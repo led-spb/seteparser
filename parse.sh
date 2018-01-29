@@ -2,7 +2,7 @@
 CUR_DIR=$(dirname $0)
 . $CUR_DIR/.config
 PARSER=$CUR_DIR/siteparser.py
-OUTPUT="-o telegram -oo token $BOT_TOKEN target $TARGET"
+OUTPUT="-o telegram -oo token $BOT_TOKEN target $TARGET once"
 
 #${PARSER} -p cps   -pp spec гинек -f regexp -ff Галынина ${OUTPUT} title 'Номерки к врачам' once timeout 64800
 #${PARSER} -p kdc   -f regexp -ff Жукова ${OUTPUT} title 'Номерки к врачам' timeout 64800

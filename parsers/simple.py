@@ -1,9 +1,9 @@
+from parser_base import SiteParser, Item, Context
 import re
-import parser
 import requests
 
 
-class SimpleParser(parser.SiteParser):
+class SimpleParser(SiteParser):
   name = "simple"
 
   def get_param(self, key, default=None):
@@ -35,41 +35,32 @@ import lxml.cssselect
 import lxml.etree
 import lxml.html
 
-from jinja2 import Environment, Template
-
-# Custom filter method
-def regex_replace(s, find, replace):
-    """A non-optimal implementation of a regex filter"""
-    return re.sub(find, replace, s)
-
-jinja_environment = Environment()
-jinja_environment.filters['regex_replace'] = regex_replace
-
-
-class CssPaser(parser.SiteParser):
+class CssPaser(SiteParser):
    name = "css"
 
    def parse(self):
        items = []
 
-       url  = self.get_param('url')
-       data = self.get_param('post')
+       url  = self.param('url')
+       data = self.param('post')
 
-       charset = self.get_param('encoding', 'utf-8')
-       css     = self.get_param("css")
+       charset = self.param('encoding', 'utf-8')
+       css     = self.param("query")
 
-       template = jinja_environment.from_string(self.get_param("template", "{{ item.text_content() }}" ) )
-
+       eval_string = self.param('eval')
        if data!=None:
          req = requests.post( url, headers={'Accept-Charset': charset}, data=data )
        else:
          req = requests.get( url, headers={'Accept-Charset': charset} )
 
-       html = req.text if charset==None else req.content.decode( charset )
+       req.encoding='utf-8'
+       html = req.text
 
        tree = lxml.html.fromstring( html )
        sel = lxml.cssselect.CSSSelector( css )
-
-       items = [ unicode(template.render(item = e)) for e in sel(tree) ]
-       return items
        
+       #items = [ unicode(template.render(item = e)) for e in sel(tree) ]
+       items = []
+       for element in sel(tree):
+          exec( eval_string, {"items":items, "Item": Item, "element": element} )
+       return items

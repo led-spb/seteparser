@@ -1,0 +1,32 @@
+debug: false
+feeds:
+  - name: nhl
+    output: !include telegram.yaml
+    parser: 
+      type: nhl
+
+  - name: school
+    output: !include telegram.yaml
+    parser:
+      type:  css
+      url:   http://school100spb.ru/
+      query: "article"
+      eval: |
+        title = element.cssselect('.entry-title')[0].text_content().strip()
+        body  = element.cssselect('.entry-content')[0].text_content().strip()
+        link  = element.cssselect('.entry-title a')[0].get('href')
+        item = Item( id=element.get('id'), category="school100", title=title, body=body, src=link )
+        items.append( item )
+
+  - name: kalina
+    output: !include telegram.yaml
+    parser:
+      type:  css
+      url:   http://oo-kalina.ru/ 
+      query: ".blog .contentpaneopen"
+      eval: |
+        title = element.cssselect('.contentheading')[0].text_content().strip()
+        body  = " ".join( filter(None, [x.strip() if x.strip()!='' else None for x in element.cssselect('.article-content')[0].itertext() ]) )
+        link  = element.cssselect('.contentheading a')[0].get('href')
+        item = Item( id=link, category="oo-kalina", title=title, body=body, src="http://oo-kalina.ru"+link )
+        items.append( item )

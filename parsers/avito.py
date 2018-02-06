@@ -1,8 +1,6 @@
 import re, urllib2
 import parser
 from pyquery import PyQuery
-#import urllib3
-#urllib3.disable_warnings()
 
 class AvitoParser(parser.SiteParser):
    name = "avito"

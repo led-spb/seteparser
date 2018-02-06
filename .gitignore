@@ -1,3 +1,4 @@
 .config
 .siteparser
 *.pyc
+secrets.yaml

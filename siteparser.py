@@ -1,77 +1,102 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import requests
-
 import logging
-import os.path, sys
+import os.path
 import argparse
+import json
+from parser_base import *
+import parsers
+import outputs
 
-sys.path.insert(0, os.path.dirname(sys.argv[0]) )
+import yaml
 
-from parsers import *
-from filters import *
-from output  import *
+class Loader(yaml.Loader):
+    def __init__(self, stream):
+        self._root = os.path.split(stream.name)[0]
+        self._secrets = None
+        super(Loader, self).__init__(stream)
+
+    def _load_secret_yaml(self, fname):
+        try:
+           with open(fname, 'r') as conf_file:
+              return yaml.load(conf_file)
+        except:
+           logging.exception("Unable to load secrets.yaml")
+        return {}
+    
+    def include(self, node):
+        filename = os.path.join(self._root, self.construct_scalar(node))
+        with open(filename, 'r') as f:
+            return yaml.load(f, Loader)
+
+    def secret(self, node):
+        if self._secrets == None:
+           self._secrets = self._load_secret_yaml( os.path.join( self._root, 'secrets.yaml' ) )
+        if node.value in self._secrets:
+           return self._secrets[node.value]
+        return None
+
+Loader.add_constructor('!secret',  Loader.secret)
+Loader.add_constructor('!include', Loader.include)
 
 
 class Application():
    def __init__(self):
       self.parse_arguments()
 
-      logging.getLogger("requests").setLevel(logging.ERROR)
-      logging.getLogger("urllib3").setLevel(logging.ERROR)
+      logging.captureWarnings(True)
+      logging.basicConfig( format = u'%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s', level = logging.DEBUG if self.config['debug'] else logging.INFO )
+      logging.getLogger("requests").setLevel( level = logging.DEBUG if self.config['debug'] else logging.WARNING  )
 
-      #logging.captureWarnings(True)
-      logging.basicConfig( format = u'%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s', level = logging.DEBUG if self.params.debug else logging.INFO )
-      logging.getLogger("requests").setLevel( level = logging.DEBUG if self.params.debug else logging.WARNING  )
+      logging.debug( "Loaded configuration: %s", json.dumps( self.config, indent=2) )
       return
 
    def parse_arguments(self):
        parser = argparse.ArgumentParser()
 
-       parser.add_argument( "-v", action="store_const", default=0, const=1, dest="debug" )
+       parser.add_argument( "-v", action="store_const", const=1, dest="debug" )
+       parser.add_argument( "-c", "--config", type=file, default="siteparser.yaml" )
+       args = parser.parse_args()
 
-       parser.add_argument( "-p",  "--parser",  required=True, choices= [c.name for c in SiteParser.__subclasses__()] )
-       parser.add_argument( "-pp", "--parser-param",  dest="parser_params", nargs="*" )
-
-       parser.add_argument( "-f",  "--filter",  required=False, choices = [c.name for c in ItemFilter.__subclasses__()], default='all' )
-       parser.add_argument( "-ff", "--filter-param",  dest="filter_params", nargs="*" )
-
-       parser.add_argument( "-o",  "--output", required=False, choices= [c.name for c in OutputProcessor.__subclasses__()], default='console' )
-       parser.add_argument( "-oo", "--output-param", dest="output_params", nargs="*" )
-
-       self.params = parser.parse_args()
+       self.config = {'debug': False, 'feeds': [] }
+       self.config.update( yaml.load( args.config, Loader ) )
+       if args.debug != None:
+          self.config['debug'] = True
        pass
 
 
-   def find_class(self,classes, name):
+   def find_class(self, classes, name):
        for c in classes:
           if c.name == name:
              return c
        return None
 
-
    def main(self):
+       for data in self.config['feeds']:
+           logging.info("Processing feed \"%s\"", data['name'] )
+           parser = self.find_class(SiteParser.__subclasses__(), data['parser']['type'])( data['parser'] )
+           items = []
+           try:
+             items = parser.parse()
+           except:
+             logging.exception('Error while parsing site')
 
-       # create site parser
-       parser = self.find_class(SiteParser.__subclasses__(),  self.params.parser )( self.params.parser_params  )
-       # filter 
-       filter = self.find_class(ItemFilter.__subclasses__(),  self.params.filter )( self.params.filter_params )
-       # output
-       output = self.find_class(OutputProcessor.__subclasses__(), self.params.output )( self.params.output_params )
+           if 'output' in data:
+              output = self.find_class(OutputProcessor.__subclasses__(), data['output']['type'])( data['output'] )
+           else:
+              output = self.find_class(OutputProcessor.__subclasses__(), 'console')()
 
-       # parse data
-       items = parser.parse()
-       for item in items:
-          if filter.filterValue(item):
-             output.process(item, parser.__class__.__name__)
-       output.finish()
-       exit()
+           for item in items:
+              try:
+                output.process(item)
+              except:
+                logging.exception('Error while output item')
+           output.finish()
        pass
 
 
 ################################
 ################################
 ################################
-
 app = Application()
 app.main()

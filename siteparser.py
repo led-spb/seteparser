@@ -64,34 +64,28 @@ class Application():
           self.config['debug'] = True
        pass
 
-
-   def find_class(self, classes, name):
-       for c in classes:
-          if c.name == name:
-             return c
-       return None
-
    def main(self):
        for data in self.config['feeds']:
            logging.info("Processing feed \"%s\"", data['name'] )
-           parser = self.find_class(SiteParser.__subclasses__(), data['parser']['type'])( data['parser'] )
            items = []
            try:
-             items = parser.parse()
+              parser = SiteParser.subclass( data['parser']['type'] )( data['parser'] )
+              items = parser.parse()
+
+              if 'filter' in data:
+                 filter_item = FilterItem.subclasss( data['filter']['type'] )( data['filter'] )
+                 items = [ item for item in items if filter_item.filterValue(item) ]
+
+              if 'output' in data:
+                 output = OutputProcessor.subclass( data['output']['type'] )( data['output'] )
+              else:
+                 output = OutputProcessor.subclass( 'console' )()
+
+              for item in items:
+                  output.process(item)
+              output.finish()
            except:
-             logging.exception('Error while parsing site')
-
-           if 'output' in data:
-              output = self.find_class(OutputProcessor.__subclasses__(), data['output']['type'])( data['output'] )
-           else:
-              output = self.find_class(OutputProcessor.__subclasses__(), 'console')()
-
-           for item in items:
-              try:
-                output.process(item)
-              except:
-                logging.exception('Error while output item')
-           output.finish()
+              logging.exception('Error while processing feed "%s"', data['name'])
        pass
 
 

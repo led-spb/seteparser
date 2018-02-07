@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-import parser
+from parser_base import SiteParser, Item
 import re, time
 import requests
 import logging
 
-class CpsirParser(parser.SiteParser):
+class CpsirParser(SiteParser):
    name = "cps"
 
    def parse(self):
        self.encoding = 'UTF-8'
        self.viewState = ""
-
 
        # 1. Start session
        self.sess = requests.Session()
@@ -22,7 +21,7 @@ class CpsirParser(parser.SiteParser):
 
        params = { "j_idt13": "j_idt13", "javax.faces.ViewState": self.viewState }
        # 2. Бюджет или платные
-       if 'budget' in self.parser_params:
+       if self.param('budget',True):
           params['j_idt13:j_idt16']=''
        else:
           params['j_idt13:j_idt19']=''
@@ -38,7 +37,12 @@ class CpsirParser(parser.SiteParser):
            for doctor in spec['doctors']:
                for day in doctor['days']:
                    for slot in day['slots']:
-                       items.append( "%s/%s/%s %s" % (spec['speciality'], doctor['name'], day['day'], slot['time'] ) )
+                       id = "cps_%s_%s_%s" % ( doctor['id'], day['id'], slot['id'] )
+                       item = Item( 
+                           id=id, category="cps",
+                           title="%s/%s" % (spec['speciality'], doctor['name']), 
+                           body="%s %s" % (day['day'], slot['time'])
+                       )
        return items
 
 

@@ -1,8 +1,8 @@
 ﻿import re, json
-import parser
+from parser_base import SiteParser, Item
 import requests
 
-class SkaParser(parser.SiteParser):
+class SkaParser(SiteParser):
    name = "ska"
 
    def parse(self):

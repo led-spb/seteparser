@@ -1,28 +1,33 @@
+# -*- coding: utf-8 -*-
 import re, urllib2
-import parser
+from parser_base import SiteParser, Item
 from pyquery import PyQuery
 
-class AvitoParser(parser.SiteParser):
+class AvitoParser(SiteParser):
    name = "avito"
 
    def parse(self):
        items = []
-       city  = self.get_param('city', 'sankt-peterburg')
-
-       base_path = 'https://www.avito.ru'
-       url = "%s/%s/%s??bt=1&i=1&user=1" %  (base_path, city, self.get_param('category') ) #,'/sankt-peterburg/tovary_dlya_detey_i_igrushki/detskie_kolyaski?bt=1&i=1&user=1'
+       url = self.param('url')
+       base_path = url
 
        d = PyQuery(url)
        for data in d('.item_table').items():
            descr = data.find(".description") 
 
-           title = descr.find(".title").text().encode("utf-8")
-           price = descr.find(".about").text().encode("utf-8")
+           title = descr.find(".title").text()
+           price = descr.find(".about").text()
            url   = descr.find("a").attr("href")
-
-           items.append("<a href=\"%s%s\">%s: %s</a>" % (base_path,url, title,price) )
+           if re.search('^http(s?)://', url)==None:
+              url = "https://www.avito.ru" + url
+           item = Item( id=url, title=title, body=price, src=url, category='avito' )
+           items.append( item )
        return items
 
 if __name__=='__main__':
-   parser = AvitoParser(['city', 'sankt-peterburg',  'category','tovary_dlya_detey_i_igrushki/detskie_kolyaski' ])
-   print parser.parse()
+   parser = AvitoParser(
+         {'url': 'https://www.avito.ru/sankt-peterburg/sport_i_otdyh?user=1&bt=1&i=1&q=%D1%85%D0%BE%D0%BA%D0%BA%D0%B5%D0%B9' } 
+   )
+   items = parser.parse()
+   for item in items:
+      print str(item)

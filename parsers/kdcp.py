@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import parser
+from 
 import re
 import requests
 
@@ -9,7 +9,7 @@ class KdcpParser(parser.SiteParser):
 
   def parse(self):
       # start session
-      if int( self.get_param('dms',0)) !=0 :
+      if int( self.param('dms',0)) !=0 :
          dms = 1
       else:
          dms = 0

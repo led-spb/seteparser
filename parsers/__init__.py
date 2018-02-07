@@ -1,2 +1,3 @@
-from nhl import *
-from simple import *
+from nhl import NhlParser
+from simple import CssPaser
+from avito import AvitoParser

@@ -1,5 +1,11 @@
 debug: false
 feeds:
+  - name: avito
+    output: !include telegram.yaml
+    parser: 
+      type: avito
+      url: https://www.avito.ru/sankt-peterburg/sport_i_otdyh?user=1&bt=1&i=1&q=%D1%85%D0%BE%D0%BA%D0%BA%D0%B5%D0%B9
+
   - name: nhl
     output: !include telegram.yaml
     parser: 

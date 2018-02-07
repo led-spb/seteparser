@@ -5,9 +5,7 @@ import time
 import re
 from jinja2 import Environment, Template
 
-# Custom filter method
 def regex_replace(s, find, replace):
-    """A non-optimal implementation of a regex filter"""
     return re.sub(find, replace, s)
 
 class Context(object):
@@ -30,6 +28,14 @@ class Item(object):
      return json.dumps( self.__data__ )
 
 
+class SelfConstruct(object):
+  @classmethod
+  def subclass(cls, name):
+      for sub_cls in cls.__subclasses__():
+         if hasattr(sub_cls,'name') and sub_cls.name==name:
+            return sub_cls
+      return None
+
 
 class Configurable(object):
   def __init__(self, params={}):
@@ -39,38 +45,37 @@ class Configurable(object):
   def has_param(self, key):
       return key in self.params
 
-
-class SiteParser(Configurable):
+class SiteParser(Configurable, SelfConstruct):
   def parse(self):
       return []
 
-class ItemFilter(Configurable):
+class ItemFilter(Configurable, SelfConstruct):
   def filterValue(self,value):
      return True
 
-
-
-class NoneFilter(ItemFilter):
+class AllFilter(ItemFilter):
   name = "all"
   pass
 
 class RegexpFilter(ItemFilter):
   name = "regexp"
-  def __init__(self,params):
-    self.filters = []
-    if params==None:
-       return
-    for text in params:
-       self.filters.append( re.compile( unicode(text,'utf-8'), re.I+re.U ) )
+
+  def _init_filters(self):
+     if hasattr(self, 'filters'):
+        return
+     self.filters = [ re.comile(expr, re.I+re.M+re.U) for expr in self.param('matches',[]) ]
+     pass
 
   def filterValue(self,value):
-    for f in self.filters:
-      if f.search(value):
-         return True
-    return False
+     self._init_filters()
+
+     for f in self.filters:
+       if f.search(item.body) or f.search(item.title):
+          return True
+     return False
 
 
-class OutputProcessor(Configurable):
+class OutputProcessor(Configurable, SelfConstruct):
   default_template = """Category: {{item.category}}
 Title: {{item.title}}
 Body: {{item.body}}
@@ -107,14 +112,15 @@ Link: {{item.src}}"""
   def format_item(self, item):
       return self.template.render(item=item, output=self)
 
-  def output(self,item):
+  def output(self, item):
       pass
 
   def finish(self):
-      try:
-        json.dump( self.cached, open( self.cache_file, "wt" ) )
-      except Exception, e:
-        pass
+      if self.once:
+         try:
+           json.dump( self.cached, open( self.cache_file, "wt" ) )
+         except Exception, e:
+           pass
       return
 
 

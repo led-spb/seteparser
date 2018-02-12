@@ -6,3 +6,7 @@ template: |
   <b>{{item.category}}</b>
   <a href="{{item.src}}">{{item.title}}</a>
   {{item.body}}
+download_video: True
+only_video: True
+ydl_opts:
+   format: "HTTP_CLOUD_MOBILE-552"

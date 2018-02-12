@@ -66,6 +66,8 @@ class Application():
 
    def main(self):
        for data in self.config['feeds']:
+           if 'enabled' in data and data['enabled']!=True:
+               continue
            logging.info("Processing feed \"%s\"", data['name'] )
            items = []
            try:

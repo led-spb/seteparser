@@ -3,6 +3,7 @@ from parser_base import SiteParser, Item
 
 class NhlParser(SiteParser):
    name = "nhl"
+
    def parse(self):
        req = requests.get( 'https://search-api.svc.nhl.com/svc/search/v2/nhl_nr_en/tag/content/gameRecap?page=1&sort=new&type=video' )
        items = []

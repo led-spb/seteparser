@@ -1,0 +1,56 @@
+- name: gorzdrav
+  output: !include telegram.yaml
+  enabled: true
+  parser:
+    type:  simple
+    url:   "https://gorzdrav.spb.ru/api/appointment_list/"
+    link:  "https://gorzdrav.spb.ru/signup/free/#%5B%7B%22district%22%3A4%7D%2C%7B%22clinic%22%3A297%7D%2C%7B%22speciality%22%3A92134170%7D%2C%7B%22doctor%22%3A90%7D%5D"
+    title: "Байкова ортопед"
+    data:  
+      doctor_form-doctor_id: 90
+      doctor_form-clinic_id: 297
+      doctor_form-patient_id:
+      doctor_form-history_id:
+      doctor_form-appointment_type:
+    headers:
+      Referer: https://gorzdrav.spb.ru/signup/free/
+      X-Requested-With: XMLHttpRequest
+      Origin: https://gorzdrav.spb.ru
+      DNT: "1"
+    eval: |
+      title     = self.param('title')
+      link      = self.param('link')
+      doctor_id = self.params['data']['doctor_form-doctor_id']
+      data = request.json()
+      if data['success']:
+         for dt in data['response'].keys():
+             self.add( id=str(doctor_id)+"_"+dt, category="gorzdrav", title=title, body=dt, src=link )
+
+
+- name: gorzdrav
+  output: !include telegram.yaml
+  enabled: true
+  parser:
+    type:  simple
+    url:   "https://gorzdrav.spb.ru/api/appointment_list/"
+    link:  "https://gorzdrav.spb.ru/signup/free/#%5B%7B%22district%22%3A4%7D%2C%7B%22clinic%22%3A297%7D%2C%7B%22speciality%22%3A92134170%7D%2C%7B%22doctor%22%3A90%7D%5D"
+    title: "Гжатская ортопед"
+    data:  
+      doctor_form-doctor_id: 168
+      doctor_form-clinic_id: 299
+      doctor_form-patient_id:
+      doctor_form-history_id:
+      doctor_form-appointment_type:
+    headers:
+      Referer: https://gorzdrav.spb.ru/signup/free/
+      X-Requested-With: XMLHttpRequest
+      Origin: https://gorzdrav.spb.ru
+      DNT: "1"
+    eval: |
+      title     = self.param('title')
+      link      = self.param('link')
+      doctor_id = self.params['data']['doctor_form-doctor_id']
+      data = request.json()
+      if data['success']:
+         for dt in data['response'].keys():
+             self.add( id=str(doctor_id)+"_"+dt, category="gorzdrav", title=title, body=dt, src=link )

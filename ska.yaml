@@ -1,0 +1,31 @@
+- name: ska_tickets
+  enabled: true
+  output: !include console.yaml telegram.yaml
+  filter:
+    type: regexp
+    matches:
+      - 'ЦСКА'
+      - 'барс'
+      - 'йокерит'
+  parser:
+    type: css
+    url: https://tickets.ska.ru/
+    eval: |
+      import datetime
+      for element in tree.cssselect('.ticket'):
+          game_id      = element.get('id')
+          game_month   = datetime.datetime.strptime(game_id[:6],'%Y%m')
+          game_time    = [x.strip() for x in element.cssselect('.ticket__date').pop().text_content().split('/')]
+
+          home_team    = element.cssselect('.host').pop().text_content().strip()
+          guest_team   = element.cssselect('.guest').pop().text_content().strip()
+
+          ticket_count = element.cssselect('.ticket__counter').pop().text_content().strip()
+          link         = None
+          has_tickets  = len(element.cssselect('.ticket__buy'))
+          if has_tickets > 0:
+             link = self.param("url")+element.cssselect('.ticket__buy').pop().get('href')
+
+          title = "%s-%02d-%04d %s %s%s%s" % (game_time[0], game_month.month, game_month.year, game_time[2], home_team, '-' if guest_team!='' else '', guest_team if guest_team!='' else '' )
+          body = ticket_count
+          self.add( id=game_id+"_"+str(has_tickets), category="ska_tickets", title=title, body=body, src=link, lifetime=15*60*60 )

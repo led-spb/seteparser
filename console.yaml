@@ -1,5 +1,6 @@
-type: console
-template: |
-  <b>{{item.category}}</b>
-  <a href="{{item.src}}">{{item.title}}</a>
-  {{item.body}}
+- type: console
+  template: |
+    {{item.id}}
+    <b>{{item.category}}</b>
+    <a href="{{item.src}}">{{item.title}}</a>
+    {{item.body}}

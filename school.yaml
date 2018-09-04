@@ -1,0 +1,13 @@
+- name: school
+  output: !include telegram.yaml
+  enabled: true
+  parser:
+    type:  css
+    url:   http://school100spb.ru/
+    eval: |
+      for element in tree.cssselect('article'):
+          id = element.get('id')
+          title = element.cssselect('.entry-title').pop().text_content().strip()
+          body  = element.cssselect('.entry-content').pop().text_content().strip()
+          link  = element.cssselect('.entry-title a').pop().get('href')
+          self.add( id=id, category="school100", title=title, body=body, src=link )

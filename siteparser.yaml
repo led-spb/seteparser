@@ -1,3 +1,3 @@
 debug: false
 feeds:
-  !include feeds.yaml
+  !include school.yaml gorzdrav.yaml nhl.yaml feeds.yaml

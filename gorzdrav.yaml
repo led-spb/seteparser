@@ -1,4 +1,4 @@
-- name: gorzdrav
+- name: gorzdrav_baykova
   output: !include telegram.yaml
   enabled: true
   parser:
@@ -18,22 +18,19 @@
       Origin: https://gorzdrav.spb.ru
       DNT: "1"
     eval: |
-      title     = self.param('title')
-      link      = self.param('link')
-      doctor_id = self.params['data']['doctor_form-doctor_id']
       data = request.json()
       if data['success']:
          for dt in data['response'].keys():
-             self.add( id=str(doctor_id)+"_"+dt, category="gorzdrav", title=title, body=dt, src=link )
+             self.add( id=dt, title=self.param('title'), body=dt, src=self.param('link'), lifetime=4*24*60*60 )
 
 
-- name: gorzdrav
+- name: gorzdrav_gzdatckay
   output: !include telegram.yaml
   enabled: true
   parser:
     type:  simple
     url:   "https://gorzdrav.spb.ru/api/appointment_list/"
-    link:  "https://gorzdrav.spb.ru/signup/free/#%5B%7B%22district%22%3A4%7D%2C%7B%22clinic%22%3A297%7D%2C%7B%22speciality%22%3A92134170%7D%2C%7B%22doctor%22%3A90%7D%5D"
+    link:  "https://gorzdrav.spb.ru/signup/free/#%5B%7B%22district%22%3A4%7D%2C%7B%22clinic%22%3A299%7D%2C%7B%22speciality%22%3A92134170%7D%2C%7B%22doctor%22%3A168%7D%5D"
     title: "Гжатская ортопед"
     data:  
       doctor_form-doctor_id: 168
@@ -47,10 +44,7 @@
       Origin: https://gorzdrav.spb.ru
       DNT: "1"
     eval: |
-      title     = self.param('title')
-      link      = self.param('link')
-      doctor_id = self.params['data']['doctor_form-doctor_id']
       data = request.json()
       if data['success']:
          for dt in data['response'].keys():
-             self.add( id=str(doctor_id)+"_"+dt, category="gorzdrav", title=title, body=dt, src=link )
+             self.add( id=dt, title=self.param('title'), body=dt, src=self.param('link'), lifetime=4*24*60*60 )

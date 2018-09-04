@@ -25,9 +25,20 @@ class Loader(yaml.Loader):
         return {}
     
     def include(self, node):
-        filename = os.path.join(self._root, self.construct_scalar(node))
-        with open(filename, 'r') as f:
-            return yaml.load(f, Loader)
+        file_list = self.construct_scalar(node).split(' ')
+        result = None
+        for fn in file_list:
+          filename = os.path.join(self._root, fn)
+
+          with open(filename, 'r') as f:
+             item = yaml.load(f, Loader)
+             if result==None:
+                result = item
+             elif type(item)==list:
+                result += item
+             else:
+                result.append( item )
+        return result
 
     def secret(self, node):
         if self._secrets == None:
@@ -36,8 +47,15 @@ class Loader(yaml.Loader):
            return self._secrets[node.value]
         return None
 
+    def value(self, node):
+        f = open(self.construct_scalar(node),"rt")
+        val = f.read()
+        f.close()
+        return val
+
 Loader.add_constructor('!secret',  Loader.secret)
 Loader.add_constructor('!include', Loader.include)
+Loader.add_constructor('!value',   Loader.value)
 
 
 class Application():
@@ -65,29 +83,41 @@ class Application():
        pass
 
    def main(self):
+       expire_policy = ItemExpirePolicy( cache_file='.'+os.path.splitext(os.path.basename(sys.argv[0]))[0] )
+
        for data in self.config['feeds']:
            if 'enabled' in data and data['enabled']!=True:
                continue
            logging.info("Processing feed \"%s\"", data['name'] )
            items = []
            try:
+              data['parser'].update({'instance': data['name']})
+
               parser = SiteParser.subclass( data['parser']['type'] )( data['parser'] )
               items = parser.parse()
 
               if 'filter' in data:
-                 filter_item = FilterItem.subclasss( data['filter']['type'] )( data['filter'] )
+                 filter_item = ItemFilter.subclass( data['filter']['type'] )( data['filter'] )
                  items = [ item for item in items if filter_item.filterValue(item) ]
 
+              outputs = []
               if 'output' in data:
-                 output = OutputProcessor.subclass( data['output']['type'] )( data['output'] )
+                 for item in data['output']:
+                     output = OutputProcessor.subclass( item['type'] )( item )
+                     outputs.append( output )
               else:
                  output = OutputProcessor.subclass( 'console' )()
+                 outputs.append( output )
 
-              for item in items:
-                  output.process(item)
-              output.finish()
+              for output in outputs:
+                  for item in items:
+                      if not output.once or expire_policy.check(item, output.timeout):
+                          output.process(item)
+                      pass
            except:
               logging.exception('Error while processing feed "%s"', data['name'])
+
+       expire_policy.save()
        pass
 
 

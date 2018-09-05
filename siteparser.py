@@ -27,6 +27,7 @@ class Loader(yaml.Loader):
     def include(self, node):
         file_list = self.construct_scalar(node).split(' ')
         result = None
+
         for fn in file_list:
           filename = os.path.join(self._root, fn)
 
@@ -35,7 +36,7 @@ class Loader(yaml.Loader):
              if result==None:
                 result = item
              elif type(item)==list:
-                result += item
+                result+=item
              else:
                 result.append( item )
         return result
@@ -47,15 +48,8 @@ class Loader(yaml.Loader):
            return self._secrets[node.value]
         return None
 
-    def value(self, node):
-        f = open(self.construct_scalar(node),"rt")
-        val = f.read()
-        f.close()
-        return val
-
 Loader.add_constructor('!secret',  Loader.secret)
 Loader.add_constructor('!include', Loader.include)
-Loader.add_constructor('!value',   Loader.value)
 
 
 class Application():
@@ -102,6 +96,9 @@ class Application():
 
               outputs = []
               if 'output' in data:
+                 if type(data['output']) != list:
+                     data['output'] = [data['output']]
+
                  for item in data['output']:
                      output = OutputProcessor.subclass( item['type'] )( item )
                      outputs.append( output )
@@ -111,7 +108,7 @@ class Application():
 
               for output in outputs:
                   for item in items:
-                      if not output.once or expire_policy.check(item, output.timeout):
+                      if not output.once or not expire_policy.expired(item, output.timeout):
                           output.process(item)
                       pass
            except:

@@ -1,4 +1,6 @@
 .config
 .siteparser
 *.pyc
+*.bak
 secrets.yaml
+siteparser-test.yaml

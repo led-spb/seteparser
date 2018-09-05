@@ -1,6 +1,8 @@
 - name: ska_tickets
   enabled: true
-  output: !include console.yaml telegram.yaml
+  output: 
+    #- !include telegram.yaml
+    - !include console.yaml
   filter:
     type: regexp
     matches:

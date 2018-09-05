@@ -129,15 +129,15 @@ class ItemExpirePolicy(object):
          pass
       pass
 
-  def check(self, item, timeout=-1):
+  def expired(self, item, timeout=-1):
       now = time.time()
       idx = str(item.category)+'_'+str(item.id)
       if idx not in self.cached.keys() or (timeout>0 and (now-self.cached[idx]['updated']) > timeout):
          self.cached[idx] = {'lifetime': item.lifetime, 'updated': time.time()}
-         return True
+         return False
 
       self.cached[idx] = {'lifetime': item.lifetime, 'updated': time.time()}
-      return False
+      return True
 
 
 class OutputProcessor(Configurable, SelfConstruct):

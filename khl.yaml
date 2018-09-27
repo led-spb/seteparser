@@ -7,7 +7,8 @@
      eval: |
          data = request.json()
          for game in data['past_events']:
-             id = game['id']
-             title = "%s - %s %s" % ( game['team_a']['name'], game['team_b']['name'], game['score'] )
-             link = "https://video.khl.ru/events/%s" % game['highlight_id']
-             self.add( id=id, title=title, src=link )
+             if game['highlight_id']!=None:
+                 id = game['id']
+                 title = "%s - %s %s" % ( game['team_a']['name'], game['team_b']['name'], game['score'] )
+                 link = "https://video.khl.ru/events/%s" % game['highlight_id']
+                 self.add( id=id, title=title, src=link )

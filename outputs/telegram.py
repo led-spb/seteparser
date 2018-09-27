@@ -19,8 +19,9 @@ class TelegramOutput(OutputProcessor):
            }
            req = requests.post(
                  'https://api.telegram.org/bot%s/sendMessage' % self.param('token'),
-                 params = message
+                 json = message
            )
+           #print req.text
            req.raise_for_status()
 
         # send video

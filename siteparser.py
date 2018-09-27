@@ -7,7 +7,6 @@ import json
 from parser_base import *
 import parsers
 import outputs
-
 import yaml
 
 class Loader(yaml.Loader):
@@ -59,6 +58,7 @@ class Application():
       logging.captureWarnings(True)
       logging.basicConfig( format = u'%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s', level = logging.DEBUG if self.config['debug'] else logging.INFO )
       logging.getLogger("requests").setLevel( level = logging.DEBUG if self.config['debug'] else logging.WARNING  )
+      logging.getLogger("chardet.charsetprober").setLevel( logging.CRITICAL )
 
       logging.debug( "Loaded configuration: %s", json.dumps( self.config, indent=2) )
       return

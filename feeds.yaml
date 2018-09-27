@@ -2,7 +2,7 @@
   enabled: false
   output: !include telegram.yaml
   parser:
-    type: css
+    type: simple
     title: 'Фестиваль ЗСД'
     url: http://zsdfest.ru/
     eval: |

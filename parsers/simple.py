@@ -4,25 +4,33 @@ import lxml.cssselect
 import lxml.etree
 import lxml.html
 
-import hashlib
-md5 = hashlib.md5
-
 
 class SimpleParser(SiteParser):
    name = "simple"
 
+   def etree(self, string):
+       return lxml.html.fromstring( string )
+
    def parse(self):
        self.items=[]
-       req = self.make_request()
+
        eval_string = self.param('eval')
        if eval_string==None:
-          raise Exception('eval string is None')
+           raise Exception('eval string is None')
 
-       exec( eval_string, {"request": req, "self": self} )
+       req = self.make_request()
+       tree = None
+       try:
+           req.encoding = 'utf-8'
+           tree = self.etree( req.text )
+       except:
+           pass
+
+       exec( eval_string, {"self": self, "request": req, "tree": tree} )
        return self.items
 
 
-class CssPaser(SiteParser):
+class CssPaser(SimpleParser):
    name = "css"
 
    def parse(self):
@@ -30,11 +38,11 @@ class CssPaser(SiteParser):
        eval_string = self.param('eval')
 
        if eval_string==None:
-          raise Exception('eval string is None')
+           raise Exception('eval string is None')
 
        req = self.make_request()
        req.encoding = 'utf-8'
-       tree = lxml.html.fromstring( req.text )
+       tree = self.etree( req.text )
 
        exec( eval_string, {"request": req, "tree": tree, "self": self} )
        return self.items

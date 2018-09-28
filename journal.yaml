@@ -24,7 +24,6 @@
           tree    = self.etree( request.text )
           subject = tree.cssselect(".subject h1").pop(0).text_content().strip()
 
-          #print "\n"+subject
           rows = tree.cssselect(".subject-stat tbody tr")
           while len(rows)>0:
               row = rows.pop(0)
@@ -32,14 +31,17 @@
 
               date  = td.pop(0).text_content().strip()
               title = td.pop(0).text_content().strip()
-              title = re.sub(u"Замена:.*$",'',title, flags=re.U+re.M+re.S)
+              title = re.sub(u"Замена:.*$",'',title, flags=re.U+re.M+re.S).strip()
               task  = td.pop(0).text_content().strip()
               grade = td.pop(0).text_content().strip()
 
-              body = u"<b>%s</b>\n<b>Тема:</b> %s\n<b>ДЗ:</b> %s\n<b>Отметка:</b> %s" % (date,title,task,grade)
+
+              body = u"<b>%s</b>\n<b>Тема:</b> %s\n<b>ДЗ:</b> %s\n<b>Отметка:</b> %s" % (date, title, task, grade)
               body = re.sub("\n\s+",'\n',body)
-              #print body
-              self.add( id= "%s_%s_%s" % (date,student_id,subject_id), title=subject, body=body, lifetime=4*24*60*60 )
+              item_id = u"%s_%s_%s_%s" % (date, student_id, subject_id, body)
+              item_id = self.md5( item_id.encode('utf-8') )
+              print item_id, date#, subject, title, task, grade
+              self.add( id=item_id, title=subject, body=body, lifetime=60*24*60*60 )
 
       for subj in self.params['subjects']:
            parse_subj( self.params['student'], subj )

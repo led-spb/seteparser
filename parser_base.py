@@ -16,12 +16,6 @@ class Context(object):
 
 Context.jinja.filters['regex_replace'] = regex_replace
 
-def md5(val):
-    h = hashlib.md5()
-    h.update(val)
-    return h.hexdigest()
-
-
 class Item(object):
     _attributes = ['id', 'title', 'body', 'src', 'category', 'attachment', 'lifetime']
 
@@ -85,8 +79,10 @@ class SiteParser(Configurable, SelfConstruct):
         self.items = []
         return self.items
 
-    def md5(self, arg):
-        return md5(repr(arg))
+    def md5(self, raw):
+        h = hashlib.md5()
+        h.update( raw )
+        return h.hexdigest()
 
 
 class ItemFilter(Configurable, SelfConstruct):
@@ -140,12 +136,18 @@ class ItemExpirePolicy(object):
     def expired(self, item, timeout=-1):
         now = time.time()
         idx = str(item.category)+'_'+str(item.id)
-        if idx not in self.cached.keys() or (timeout>0 and (now-self.cached[idx]['updated']) > timeout):
+        if idx not in self.cached.keys() or (timeout>0 and (now-self.cached[idx]['updated'])>timeout):
            self.cached[idx] = {'lifetime': item.lifetime, 'updated': time.time()}
            return False
 
         self.cached[idx] = {'lifetime': item.lifetime, 'updated': time.time()}
         return True
+
+    def remove(self, item):
+        idx = str(item.category)+'_'+str(item.id)
+        if idx in self.cached.keys():
+           del self.cached[idx]
+        return
 
 
 class OutputProcessor(Configurable, SelfConstruct):
@@ -165,6 +167,7 @@ class OutputProcessor(Configurable, SelfConstruct):
             self.output( item )
         except Exception,e:
             logging.exception("output exception")
+            return False
         return True
 
     def format_item(self, item):

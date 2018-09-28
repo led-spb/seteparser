@@ -10,7 +10,7 @@
       - 'барс'
       - 'йокерит'
   parser:
-    type: css
+    type: simple
     url: https://tickets.ska.ru/
     eval: |
       import datetime

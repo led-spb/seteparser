@@ -109,7 +109,8 @@ class Application():
               for output in outputs:
                   for item in items:
                       if not output.once or not expire_policy.expired(item, output.timeout):
-                          output.process(item)
+                          if not output.process(item):
+                              expire_policy.remove(item)
                       pass
            except:
               logging.exception('Error while processing feed "%s"', data['name'])

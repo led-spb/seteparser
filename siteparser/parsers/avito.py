@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import re, urllib2
-from parser_base import SiteParser, Item
+from siteparser.parser_base import SiteParser, Item
 from pyquery import PyQuery
 
 class AvitoParser(SiteParser):

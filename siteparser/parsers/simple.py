@@ -1,4 +1,4 @@
-from parser_base import SiteParser, Item
+from siteparser.parser_base import SiteParser, Item
 import requests
 import lxml.cssselect
 import lxml.etree

@@ -1,3 +1,0 @@
-debug: false
-feeds:
-  !include khl.yaml school.yaml gorzdrav.yaml nhl.yaml feeds.yaml

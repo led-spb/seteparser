@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from 
+#from parser_base import SiteParser, Item
 import re
 import requests
 

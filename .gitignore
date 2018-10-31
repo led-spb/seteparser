@@ -4,3 +4,6 @@
 *.bak
 secrets.yaml
 siteparser-test.yaml
+build
+dist
+*.egg-info

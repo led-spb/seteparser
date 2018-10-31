@@ -119,8 +119,10 @@ class Application():
        pass
 
 
-################################
-################################
-################################
-app = Application()
-app.main()
+def main():
+    app = Application()
+    app.main()
+
+
+if __name__ == "__main__":
+    main()

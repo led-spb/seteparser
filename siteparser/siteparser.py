@@ -56,8 +56,12 @@ class Application():
       self.parse_arguments()
 
       logging.captureWarnings(True)
-      logging.basicConfig( format = u'%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s', level = logging.DEBUG if self.config['debug'] else logging.INFO )
-      logging.getLogger("requests").setLevel( level = logging.DEBUG if self.config['debug'] else logging.WARNING  )
+      logging.basicConfig(
+          format = u'%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s',
+          level = logging.DEBUG if self.config['debug'] else logging.INFO,
+          filename = self.config['logfile']
+      )
+      logging.getLogger("requests").setLevel( level = logging.DEBUG if self.config['debug'] else logging.WARNING )
       logging.getLogger("chardet.charsetprober").setLevel( logging.CRITICAL )
 
       logging.debug( "Loaded configuration: %s", json.dumps( self.config, indent=2) )
@@ -70,7 +74,7 @@ class Application():
        parser.add_argument( "-c", "--config", type=file, default="siteparser.yaml" )
        args = parser.parse_args()
 
-       self.config = {'debug': False, 'feeds': [] }
+       self.config = {'debug': False, 'feeds': [], 'logfile': None}
        self.config.update( yaml.load( args.config, Loader ) )
        if args.debug != None:
           self.config['debug'] = True

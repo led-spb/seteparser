@@ -20,6 +20,7 @@ setuptools.setup(
     install_requires=[
        'requests>=2.10.0',
        'jinja2>=2.10.0',
+       'pysocks',
 #       'lxml>=2.0',
 #       'cssselect',
        'pyyaml>3.10',

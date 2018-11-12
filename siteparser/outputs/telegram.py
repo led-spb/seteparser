@@ -13,6 +13,9 @@ class TelegramOutput(OutputProcessor):
     def output(self, item):
         download_video = self.param('download_video',False) and item.src!=None and self.download_supported(item.src)
 
+        self.session = requests.Session()
+        self.session.proxies = self.param('proxy', None)
+
         # send message body
         if not download_video or not self.param('only_video',False):
            message_text =  self.format_item(item)
@@ -21,7 +24,7 @@ class TelegramOutput(OutputProcessor):
              'parse_mode': 'HTML',
              'text':       message_text
            }
-           req = requests.post(
+           req = self.session.post(
                  'https://api.telegram.org/bot%s/sendMessage' % self.param('token'),
                  json = message
            )
@@ -35,7 +38,7 @@ class TelegramOutput(OutputProcessor):
              'chat_id': self.param('chat_id'),
              'caption': item.title
            }
-           req = requests.post(
+           req = self.session.post(
                   'https://api.telegram.org/bot%s/sendVideo' % self.param('token'),
                   params = video,
                   files = { 'video': (filename, open(filename,'rb'), 'video/mp4') }

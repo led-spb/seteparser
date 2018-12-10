@@ -18,18 +18,22 @@ class TelegramOutput(OutputProcessor):
 
         # send message body
         if not download_video or not self.param('only_video',False):
-           message_text =  self.format_item(item)
-           message = {
-             'chat_id':    self.param('chat_id'),
-             'parse_mode': 'HTML',
-             'text':       message_text
-           }
-           req = self.session.post(
-                 'https://api.telegram.org/bot%s/sendMessage' % self.param('token'),
-                 json = message
-           )
-           #print req.text
-           req.raise_for_status()
+            targets = self.param('chat_id')
+            if type(targets)!=list:
+                targets=[targets]
+
+            for chat_id in targets:
+                message_text =  self.format_item(item)
+                message = {
+                  'chat_id':    chat_id,
+                  'parse_mode': 'HTML',
+                  'text':       message_text
+                }
+                req = self.session.post(
+                      'https://api.telegram.org/bot%s/sendMessage' % self.param('token'),
+                      json = message
+                )
+                req.raise_for_status()
 
         # send video
         if download_video and 'youtube_dl' in dir():

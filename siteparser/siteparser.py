@@ -83,6 +83,8 @@ class Application():
    def main(self):
        expire_policy = ItemExpirePolicy( cache_file='.'+os.path.splitext(os.path.basename(sys.argv[0]))[0] )
 
+       default_output = self.config['output'] if 'output' in self.config else {}
+
        for data in self.config['feeds']:
            if 'enabled' in data and data['enabled']!=True:
                continue
@@ -98,24 +100,19 @@ class Application():
                  filter_item = ItemFilter.subclass( data['filter']['type'] )( data['filter'] )
                  items = [ item for item in items if filter_item.filterValue(item) ]
 
-              outputs = []
+              #output = []
+              output_params = default_output
               if 'output' in data:
-                 if type(data['output']) != list:
-                     data['output'] = [data['output']]
-
-                 for item in data['output']:
-                     output = OutputProcessor.subclass( item['type'] )( item )
-                     outputs.append( output )
+                 output_params.update( data['output'] )
+                 output = OutputProcessor.subclass( output_params['type'] )( output_params )
               else:
                  output = OutputProcessor.subclass( 'console' )()
-                 outputs.append( output )
 
-              for output in outputs:
-                  for item in items:
-                      if not output.once or not expire_policy.expired(item, output.timeout):
-                          if not output.process(item):
-                              expire_policy.remove(item)
-                      pass
+              for item in items:
+                  if not output.once or not expire_policy.expired(item, output.timeout):
+                      if not output.process(item):
+                          expire_policy.remove(item)
+                  pass
            except:
               logging.exception('Error while processing feed "%s"', data['name'])
 

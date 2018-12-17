@@ -11,31 +11,45 @@ class TelegramOutput(OutputProcessor):
     name = "telegram"
 
     def output(self, item):
-        download_video = self.param('download_video',False) and item.src!=None and self.download_supported(item.src)
+        download_video = self.param('download_video', False) and item.src!=None and self.download_supported(item.src)
 
         self.session = requests.Session()
         self.session.proxies = self.param('proxy', None)
 
         # send message body
-        if not download_video or not self.param('only_video',False):
-            targets = self.param('chat_id')
-            if type(targets)!=list:
-                targets=[targets]
+        if not download_video or not self.param('only_video', False):
+            chat_id = self.param('chat_id')
 
-            for chat_id in targets:
-                message_text =  self.format_item(item)
+            message_text =  self.format_item(item)
+            for step in range(2):
                 message = {
                   'chat_id':    chat_id,
                   'parse_mode': 'HTML',
                   'text':       message_text
                 }
+                method = 'sendMessage'
+                if step==0 and self.param('edit_messages',False) and 'message_id' in item.data and item.data['chat_id']==chat_id:
+                   message['message_id'] = item.data
+                   method = 'editMessageText'
+
                 req = self.session.post(
-                      'https://api.telegram.org/bot%s/sendMessage' % self.param('token'),
+                      'https://api.telegram.org/bot%s/%s' % (self.param('token'), method),
                       json = message
                 )
+                if method=='editMessageText' and req.status_code!=200:
+                    continue
+
                 req.raise_for_status()
+                result = req.json()['result']
+
+                chat_id = result['chat']['id']
+                message_id = result['message_id']
+
+                item.data['chat_id'] = chat_id
+                item.data['message_id'] = message_id
 
         # send video
+        """
         if download_video and 'youtube_dl' in dir():
            filename = self.download_video(item.src)
            video = {
@@ -48,7 +62,7 @@ class TelegramOutput(OutputProcessor):
                   files = { 'video': (filename, open(filename,'rb'), 'video/mp4') }
            )
            req.raise_for_status()
-           os.remove( filename )
+           os.remove( filename )"""
         return True
 
     def download_supported(self, url):

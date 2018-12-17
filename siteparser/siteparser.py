@@ -81,9 +81,8 @@ class Application():
        pass
 
    def main(self):
-       expire_policy = ItemExpirePolicy( cache_file='.'+os.path.splitext(os.path.basename(sys.argv[0]))[0] )
-
-       default_output = self.config['output'] if 'output' in self.config else {}
+       cache = ItemCache( cache_file='.'+os.path.splitext(os.path.basename(sys.argv[0]))[0] )
+       default_output = self.config['output'] if 'output' in self.config else {'type': 'console'}
 
        for data in self.config['feeds']:
            if 'enabled' in data and data['enabled']!=True:
@@ -100,23 +99,19 @@ class Application():
                  filter_item = ItemFilter.subclass( data['filter']['type'] )( data['filter'] )
                  items = [ item for item in items if filter_item.filterValue(item) ]
 
-              #output = []
               output_params = default_output
               if 'output' in data:
                  output_params.update( data['output'] )
-                 output = OutputProcessor.subclass( output_params['type'] )( output_params )
+                 output = OutputProcessor.subclass( output_params['type'] )(cache, output_params )
               else:
-                 output = OutputProcessor.subclass( 'console' )()
+                 output = OutputProcessor.subclass( 'console' )(cache)
 
               for item in items:
-                  if not output.once or not expire_policy.expired(item, output.timeout):
-                      if not output.process(item):
-                          expire_policy.remove(item)
+                  output.process(item)
                   pass
            except:
               logging.exception('Error while processing feed "%s"', data['name'])
-
-       expire_policy.save()
+       cache.save()
        pass
 
 

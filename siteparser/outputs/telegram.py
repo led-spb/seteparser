@@ -47,6 +47,7 @@ class TelegramOutput(OutputProcessor):
 
                 item.data['chat_id'] = chat_id
                 item.data['message_id'] = message_id
+                break
 
         # send video
         """

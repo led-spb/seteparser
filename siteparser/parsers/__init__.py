@@ -1,2 +1,1 @@
-from simple import CssPaser, SimpleParser
-#from avito import AvitoParser
+from simple import CssParser, SimpleParser

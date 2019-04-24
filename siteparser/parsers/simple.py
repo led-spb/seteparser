@@ -1,8 +1,7 @@
 try:
     from siteparser.parser_base import SiteParser, Item
-except:
+except ImportError:
     from parser_base import SiteParser, Item
-import requests
 import lxml.cssselect
 import lxml.etree
 import lxml.html
@@ -12,7 +11,23 @@ class SimpleParser(SiteParser):
     name = "simple"
 
     def etree(self, string):
-        return lxml.html.fromstring( string )
+        return lxml.html.fromstring(string)
+
+    def user_context(self):
+        response = None
+        tree = None
+
+        if self.param('url') is not None:
+            # make request
+            response = self.make_request()
+            # try to parse response as element tree
+            tree = None
+            try:
+                response.encoding = 'utf-8'
+                tree = self.etree(response.text)
+            except StandardError:
+                pass
+        return {"self": self, "response": response, "tree": tree}
 
     def parse(self):
         self.items = []
@@ -21,34 +36,11 @@ class SimpleParser(SiteParser):
         if eval_string is None:
             raise Exception('eval string is None')
 
-        req = None
-        tree = None
-        if self.param('url') is not None:
-            req = self.make_request()
-            tree = None
-            try:
-                req.encoding = 'utf-8'
-                tree = self.etree( req.text )
-            except:
-                pass
-
-        exec(eval_string, {"self": self, "request": req, "tree": tree})
+        context = self.user_context()
+        exec (eval_string, context)
         return self.items
 
 
-class CssPaser(SimpleParser):
-   name = "css"
+class CssParser(SimpleParser):
+    name = "css"
 
-   def parse(self):
-       self.items = []
-       eval_string = self.param('eval')
-
-       if eval_string==None:
-           raise Exception('eval string is None')
-
-       req = self.make_request()
-       req.encoding = 'utf-8'
-       tree = self.etree( req.text )
-
-       exec( eval_string, {"request": req, "tree": tree, "self": self} )
-       return self.items

@@ -100,11 +100,10 @@ class Application():
 
               output_params = default_output
               if 'output' in data:
-                 output_params.update( data['output'] )
-                 output = OutputProcessor.subclass( output_params['type'] )(cache, output_params )
-              else:
-                 output = OutputProcessor.subclass( 'console' )(cache)
+                 output_params.update(data['output'])
 
+              output = OutputProcessor.subclass( output_params['type'] )(cache, output_params )
+              logging.debug('Using %s output process', output.__class__.__name__)
               for item in items:
                   output.process(item)
                   pass

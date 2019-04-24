@@ -1,0 +1,5 @@
+requests
+jinja2
+lxml
+cssselect
+pyyaml>3.10

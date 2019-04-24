@@ -7,3 +7,5 @@ siteparser-test.yaml
 build
 dist
 *.egg-info
+/.idea
+/venv

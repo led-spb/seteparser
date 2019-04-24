@@ -1,6 +1,8 @@
 import requests
-import os
-from siteparser.parser_base import OutputProcessor, Item
+try:
+    from siteparser.parser_base import OutputProcessor, Item
+except:
+    from parser_base import OutputProcessor, Item
 try:
     import youtube_dl
 except:

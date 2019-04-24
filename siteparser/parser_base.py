@@ -1,5 +1,4 @@
-import sys
-import json, os
+import json
 import logging
 import time
 import re
@@ -66,23 +65,23 @@ class SiteParser(Configurable, SelfConstruct):
         self.session.cookies = cookielib.CookieJar()
 
     def make_request(self, url=None, data=None, headers=None):
-        url  = url or self.param('url')
+        url = url or self.param('url')
         data = data or self.param('data')
 
         charset = self.param('encoding', 'utf-8')
         req_headers = {'Accept-Charset': charset}
-        req_headers.update( headers or self.param('headers') or {} )
+        req_headers.update(headers or self.param('headers') or {})
 
-        if data!=None:
-            req = self.session.post( url, headers=req_headers, data=data )
+        if data is not None:
+            req = self.session.post(url, headers=req_headers, data=data)
         else:
-            req = self.session.get( url, headers=req_headers )
+            req = self.session.get(url, headers=req_headers)
         logging.debug(req.text)
         return req
 
     def add(self, **kwargs):
-        kwargs.update( {'category': self.param('instance')} )
-        self.items.append( Item(**kwargs) )
+        kwargs.update({'category': self.param('instance')})
+        self.items.append(Item(**kwargs))
 
     def parse(self):
         self.items = []
@@ -90,7 +89,7 @@ class SiteParser(Configurable, SelfConstruct):
 
     def md5(self, raw):
         h = hashlib.md5()
-        h.update( raw )
+        h.update(raw)
         return h.hexdigest()
 
 

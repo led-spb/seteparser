@@ -1,9 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import logging
+import sys
 import os.path
 import argparse
-import json
 from parser_base import *
 import parsers
 import outputs
@@ -92,7 +91,7 @@ class Application():
            try:
               data['parser'].update({'instance': data['name']})
 
-              parser = SiteParser.subclass( data['parser']['type'] )( data['parser'] )
+              parser = SiteParser.subclass(data['parser']['type'] )( data['parser'])
               items = parser.parse()
 
               if 'filter' in data:

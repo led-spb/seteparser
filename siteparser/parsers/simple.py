@@ -23,7 +23,7 @@ class SimpleParser(SiteParser):
             # try to parse response as element tree
             tree = None
             try:
-                response.encoding = 'utf-8'
+                response.encoding = self.param('encoding', 'utf-8')
                 tree = self.etree(response.text)
             except StandardError:
                 pass

@@ -43,9 +43,13 @@ class Loader(yaml.Loader):
     def secret(self, node):
         if self._secrets is None:
             self._secrets = self._load_secret_yaml(os.path.join(self._root, 'secrets.yaml'))
-        if node.value in self._secrets:
-            return self._secrets[node.value]
-        return None
+        current_value = self._secrets
+        for element in node.value.split('.'):
+            if element in current_value:
+                current_value = current_value[element]
+            else:
+                return None
+        return current_value
 
 
 Loader.add_constructor('!secret', Loader.secret)

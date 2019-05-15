@@ -190,7 +190,7 @@ Link: {{item.src}}"""
         self.cache = cache
         self.template = Context.jinja.from_string(self.param("template", self.default_template))
         self.timeout = int(self.param('timeout', -1))
-        self.once = self.has_param('once')
+        self.once = self.param('once', False)
 
     def process(self, item):
         try:

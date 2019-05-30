@@ -3,10 +3,13 @@
 import sys
 import os.path
 import argparse
-from parser_base import *
-import parsers
-import outputs
 import yaml
+import logging
+import json
+import time
+import base
+from parsers import CssParser, SimpleParser
+from outputs import TelegramOutput
 
 
 class Loader(yaml.Loader):
@@ -87,17 +90,41 @@ class Application(object):
         pass
 
     def main(self):
-        cache = ItemCache(cache_file='.' + os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        storage = base.KeyStorage(filename='.' + os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        cache = base.ItemCache(storage)
+
         default_output = self.config['output'] if 'output' in self.config else {'type': 'console'}
+        schedules = {}
+	timestamps = storage.get('timestamps')
+
+        default_scheduler = base.Schedule()
+        now = time.time()
+        if 'schedule' in self.config:
+            for name, params in self.config['schedule'].items():
+                schedules[name] = base.Schedule(params)
 
         for data in self.config['feeds']:
             if 'enabled' in data and not data['enabled']:
                 continue
-            logging.info("Processing feed \"%s\"", data['name'])
             try:
                 data['parser'].update({'instance': data['name']})
 
-                parser = SiteParser.subclass(data['parser']['type'])(data['parser'])
+                parser = base.SiteParser.subclass(data['parser']['type'])(data['parser'])
+                if data['name'] in timestamps:
+                    parser.last_timestamp = timestamps[data['name']]
+
+                schedule = default_scheduler
+                if 'schedule' in data:
+                    if type(data['schedule']) is dict:
+                       schedule = base.Schedule(data['schedule'])
+                    elif data['schedule'] in schedules:
+                       schedule = schedules[data['schedule']]
+
+                if not schedule.is_trigger(now, parser):
+                    logging.debug("Skipping feed \"%s\"", data['name'])
+                    continue
+
+                logging.info("Processing feed \"%s\"", data['name'])
                 items = parser.parse()
 
                 if 'filter' in data:
@@ -108,14 +135,23 @@ class Application(object):
                 if 'output' in data:
                     output_params.update(data['output'])
 
-                output = OutputProcessor.subclass(output_params['type'])(cache, output_params)
+                output = base.OutputProcessor.subclass(output_params['type'])(cache, output_params)
                 logging.debug('Using %s output processor', output.__class__.__name__)
                 for item in items:
                     output.process(item)
                     pass
+
+                parser.last_timestamp = now
+                timestamps[data['name']] = now
+                #if 'timestamps' not in storage:
+                #   storage['timestamps'] = {}
+                #storage['timestamps'][data['name']] = now
             except StandardError:
                 logging.exception('Error while processing feed "%s"', data['name'])
+
+        storage.put('timestamps', timestamps)
         cache.save()
+        storage.save()
         pass
 
 

@@ -5,6 +5,7 @@ import re
 import requests
 import cookielib
 import hashlib
+import humanfriendly
 from jinja2 import Environment, Template
 
 
@@ -17,6 +18,23 @@ class Context(object):
 
 
 Context.jinja.filters['regex_replace'] = regex_replace
+
+
+class Map(dict):
+    @classmethod
+    def from_dict(cls, dict_object):
+        obj = Map()
+        for key, value in dict_object.items():
+            if type(value) is dict:
+                value = Map.from_dict(value)
+            obj[key] = value
+        return obj
+
+    def __getattr__(self, attr):
+        return self.__getitem__(attr)
+
+    def __setattr__(self, attr, value):
+        self[attr] = value
 
 
 class Item(object):
@@ -56,7 +74,7 @@ class SelfConstruct(object):
 
 class Configurable(object):
     def __init__(self, params=None):
-        self.params = params or {}
+        self.params = Map.from_dict(params or {})
 
     def param(self, key, default=None):
         return self.params[key] if key in self.params else default
@@ -65,11 +83,27 @@ class Configurable(object):
         return key in self.params
 
 
+class Schedule(Configurable):
+    def __init__(self, params=None):
+        Configurable.__init__(self, params)
+        self.period = 0
+        if 'period' in self.params:
+            self.period = humanfriendly.parse_timespan(self.params.period)
+        pass
+
+    def is_trigger(self, timestamp, parser):
+        if (timestamp - parser.last_timestamp) >= self.period:
+            return True
+        return False
+     
+
+
 class SiteParser(Configurable, SelfConstruct):
     def __init__(self, params=None):
         Configurable.__init__(self, params)
         self.session = requests.Session()
         self.session.cookies = cookielib.CookieJar()
+        self.last_timestamp = 0
         self.items = []
 
     def make_request(self, url=None, data=None, headers=None):
@@ -126,9 +160,36 @@ class RegexpFilter(ItemFilter):
         return False
 
 
+class KeyStorage(object):
+    def __init__(self, filename):
+        self.storage = {}
+        self.filename = filename
+        self.load()
+
+    def load(self):
+        try:
+            self.storage = json.load(open(self.filename, "rt"))
+            if type(self.storage) is not dict:
+               self.storage = {}
+        except StandardError:
+            pass
+
+    def save(self):    
+        try:
+            json.dump(self.storage, open(self.filename, "wt"), indent=2)
+        except StandardError:
+            pass
+
+    def get(self, attr):
+        return self.storage.get(attr)
+
+    def put(self, attr, value):
+        self.storage[attr] = value
+
+
 class ItemCache(object):
-    def __init__(self, cache_file):
-        self.cache_file = cache_file
+    def __init__(self, storage):
+        self.storage = storage
         self.cached = {}
         self.load()
         pass
@@ -136,7 +197,7 @@ class ItemCache(object):
     def load(self):
         self.cached = {}
         try:
-            for x in json.load(open(self.cache_file, "rt")):
+            for x in (self.storage.get('items') or []):
                 item = Item(**x)
                 logging.debug(str(item))
                 self.add(item, True)
@@ -151,7 +212,8 @@ class ItemCache(object):
                 if self.cached[idx].lifetime is not None and self.cached[idx].lifetime > 0 \
                         and (now - self.cached[idx].data['updated']) > self.cached[idx].lifetime:
                     del self.cached[idx]
-            json.dump([x.__data__ for x in self.cached.itervalues()], open(self.cache_file, "wt"), indent=2)
+            self.storage.put('items', [x.__data__ for x in self.cached.itervalues()])
+            #json.dump([x.__data__ for x in self.cached.itervalues()], open(self.cache_file, "wt"), indent=2)
         except StandardError:
             # logging.exception('on store cache')
             pass
@@ -180,7 +242,8 @@ class ItemCache(object):
 
 
 class OutputProcessor(Configurable, SelfConstruct):
-    default_template = """Category: {{item.category}}
+    default_template = \
+"""Category: {{item.category}}
 Title: {{item.title}}
 Body: {{item.body}}
 Link: {{item.src}}"""

@@ -1,13 +1,10 @@
-try:
-    from siteparser.parser_base import SiteParser, Item
-except ImportError:
-    from parser_base import SiteParser, Item
 import lxml.cssselect
 import lxml.etree
 import lxml.html
+import base
 
 
-class SimpleParser(SiteParser):
+class SimpleParser(base.SiteParser):
     name = "simple"
 
     def etree(self, string):

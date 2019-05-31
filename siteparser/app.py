@@ -18,7 +18,8 @@ class Loader(yaml.Loader):
         self._secrets = None
         super(Loader, self).__init__(stream)
 
-    def _load_secret_yaml(self, fname):
+    @staticmethod
+    def _load_secret_yaml(fname):
         try:
             with open(fname, 'r') as conf_file:
                 return yaml.load(conf_file)
@@ -31,9 +32,7 @@ class Loader(yaml.Loader):
         result = None
 
         for fn in file_list:
-            filename = os.path.join(self._root, fn)
-
-            with open(filename, 'r') as f:
+            with open(os.path.join(self._root, fn), 'r') as f:
                 item = yaml.load(f, Loader)
                 if result is None:
                     result = item
@@ -90,15 +89,14 @@ class Application(object):
         pass
 
     def main(self):
+        now = time.time()
         storage = base.KeyStorage(filename='.' + os.path.splitext(os.path.basename(sys.argv[0]))[0])
         cache = base.ItemCache(storage)
+        parsers = []
 
         default_output = self.config['output'] if 'output' in self.config else {'type': 'console'}
         schedules = {}
-	timestamps = storage.get('timestamps')
-
         default_scheduler = base.Schedule()
-        now = time.time()
         if 'schedule' in self.config:
             for name, params in self.config['schedule'].items():
                 schedules[name] = base.Schedule(params)
@@ -109,16 +107,14 @@ class Application(object):
             try:
                 data['parser'].update({'instance': data['name']})
 
-                parser = base.SiteParser.subclass(data['parser']['type'])(data['parser'])
-                if data['name'] in timestamps:
-                    parser.last_timestamp = timestamps[data['name']]
-
+                parser = base.SiteParser.subclass(data['parser']['type'])(storage, data['parser'])
+                parsers.append(parser)
                 schedule = default_scheduler
                 if 'schedule' in data:
                     if type(data['schedule']) is dict:
-                       schedule = base.Schedule(data['schedule'])
+                        schedule = base.Schedule(data['schedule'])
                     elif data['schedule'] in schedules:
-                       schedule = schedules[data['schedule']]
+                        schedule = schedules[data['schedule']]
 
                 if not schedule.is_trigger(now, parser):
                     logging.debug("Skipping feed \"%s\"", data['name'])
@@ -128,7 +124,7 @@ class Application(object):
                 items = parser.parse()
 
                 if 'filter' in data:
-                    filter_item = ItemFilter.subclass(data['filter']['type'])(data['filter'])
+                    filter_item = base.ItemFilter.subclass(data['filter']['type'])(data['filter'])
                     items = [item for item in items if filter_item.filter(item)]
 
                 output_params = default_output.copy()
@@ -142,14 +138,10 @@ class Application(object):
                     pass
 
                 parser.last_timestamp = now
-                timestamps[data['name']] = now
-                #if 'timestamps' not in storage:
-                #   storage['timestamps'] = {}
-                #storage['timestamps'][data['name']] = now
             except StandardError:
                 logging.exception('Error while processing feed "%s"', data['name'])
 
-        storage.put('timestamps', timestamps)
+        storage.put('timestamps', {x.instance_name: x.last_timestamp for x in parsers})
         cache.save()
         storage.save()
         pass

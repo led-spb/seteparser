@@ -67,9 +67,14 @@ class SelfConstruct(object):
     @classmethod
     def subclass(cls, name):
         for sub_cls in cls.__subclasses__():
-            if hasattr(sub_cls, 'name') and sub_cls.name == name:
+            #if hasattr(sub_cls, 'name') and sub_cls.name == name:
+            if sub_cls.get_name() == name:
                 return sub_cls
         return None
+
+    @classmethod
+    def get_name(cls):
+        return getattr(cls,'name', None)
 
 
 class Configurable(object):
@@ -87,23 +92,56 @@ class Schedule(Configurable):
     def __init__(self, params=None):
         Configurable.__init__(self, params)
         self.period = 0
+        self.start_time = 0
+        self.end_time = 24*60*60
         if 'period' in self.params:
             self.period = humanfriendly.parse_timespan(self.params.period)
+        if 'interval' in self.params:
+            if 'start' in self.params.interval:
+                self.start_time = self._parse_time_as_sec(self.params.interval.start, self.start_time)
+            if 'end' in self.params:
+                self.end_time = self._parse_time_as_sec(self.params.interval.end, self.end_time)
         pass
 
+    @staticmethod
+    def _parse_time_as_sec(str_value, def_value):
+        try:
+            tm = time.strptime(str_value, '%H:%M')
+            return tm.tm_hour * 60 * 60 + tm.tm_min * 60
+        except ValueError:
+            return def_value
+
+    @staticmethod
+    def _start_of_day(tm=None):
+        if tm is None:
+            tm = time.localtime()
+        start_of_day = time.struct_time((tm.tm_year, tm.tm_mon, tm.tm_mday, 0, 0, 0, tm.tm_wday, tm.tm_yday, tm.tm_isdst) )
+        return time.mktime(start_of_day)
+
     def is_trigger(self, timestamp, parser):
+        result = False
         if (timestamp - parser.last_timestamp) >= self.period:
-            return True
-        return False
+            result = True
+
+        if result:
+            start_of_day = self._start_of_day()
+            if (start_of_day+self.start_time) <= timestamp <= (start_of_day+self.end_time):
+                result = True
+            else:
+                result = False
+        return result
      
 
-
 class SiteParser(Configurable, SelfConstruct):
-    def __init__(self, params=None):
+    def __init__(self, storage, params=None):
         Configurable.__init__(self, params)
         self.session = requests.Session()
         self.session.cookies = cookielib.CookieJar()
+        self.storage = storage
         self.last_timestamp = 0
+        self.instance_name = self.params.instance or self.get_name()
+        if self.storage.get('timestamps') is not None and self.instance_name in self.storage.get('timestamps'):
+            self.last_timestamp = self.storage.get('timestamps')[self.instance_name]
         self.items = []
 
     def make_request(self, url=None, data=None, headers=None):
@@ -213,9 +251,7 @@ class ItemCache(object):
                         and (now - self.cached[idx].data['updated']) > self.cached[idx].lifetime:
                     del self.cached[idx]
             self.storage.put('items', [x.__data__ for x in self.cached.itervalues()])
-            #json.dump([x.__data__ for x in self.cached.itervalues()], open(self.cache_file, "wt"), indent=2)
         except StandardError:
-            # logging.exception('on store cache')
             pass
         pass
 

@@ -1,15 +1,12 @@
 import requests
-try:
-    from siteparser.parser_base import OutputProcessor, Item
-except ImportError:
-    from parser_base import OutputProcessor, Item
+import base
 try:
     import youtube_dl
 except ImportError:
     pass
 
 
-class TelegramOutput(OutputProcessor):
+class TelegramOutput(base.OutputProcessor):
     name = "telegram"
 
     def output(self, item):

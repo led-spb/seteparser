@@ -9,15 +9,16 @@ setuptools.setup(
     author_email="alexey.ponimash@gmail.com",
     packages=setuptools.find_packages(),
     install_requires=[
-       'requests',
-       'jinja2',
-       'lxml',
-       'cssselect',
-       'pyyaml>3.10',
+        'requests',
+        'jinja2',
+        'lxml',
+        'cssselect',
+        'pyyaml>3.10',
+        'humanfriendly'
     ],
     entry_points={
        'console_scripts': [
-            'siteparser = siteparser.siteparser:main'
+            'siteparser = siteparser.app:main'
        ]
     },
 )

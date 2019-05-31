@@ -3,10 +3,13 @@
 import sys
 import os.path
 import argparse
-from parser_base import *
-import parsers
-import outputs
 import yaml
+import logging
+import json
+import time
+import base
+from parsers import CssParser, SimpleParser
+from outputs import TelegramOutput
 
 
 class Loader(yaml.Loader):
@@ -15,7 +18,8 @@ class Loader(yaml.Loader):
         self._secrets = None
         super(Loader, self).__init__(stream)
 
-    def _load_secret_yaml(self, fname):
+    @staticmethod
+    def _load_secret_yaml(fname):
         try:
             with open(fname, 'r') as conf_file:
                 return yaml.load(conf_file)
@@ -28,9 +32,7 @@ class Loader(yaml.Loader):
         result = None
 
         for fn in file_list:
-            filename = os.path.join(self._root, fn)
-
-            with open(filename, 'r') as f:
+            with open(os.path.join(self._root, fn), 'r') as f:
                 item = yaml.load(f, Loader)
                 if result is None:
                     result = item
@@ -87,35 +89,61 @@ class Application(object):
         pass
 
     def main(self):
-        cache = ItemCache(cache_file='.' + os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        now = time.time()
+        storage = base.KeyStorage(filename='.' + os.path.splitext(os.path.basename(sys.argv[0]))[0])
+        cache = base.ItemCache(storage)
+        parsers = []
+
         default_output = self.config['output'] if 'output' in self.config else {'type': 'console'}
+        schedules = {}
+        default_scheduler = base.Schedule()
+        if 'schedule' in self.config:
+            for name, params in self.config['schedule'].items():
+                schedules[name] = base.Schedule(params)
 
         for data in self.config['feeds']:
             if 'enabled' in data and not data['enabled']:
                 continue
-            logging.info("Processing feed \"%s\"", data['name'])
             try:
                 data['parser'].update({'instance': data['name']})
 
-                parser = SiteParser.subclass(data['parser']['type'])(data['parser'])
+                parser = base.SiteParser.subclass(data['parser']['type'])(storage, data['parser'])
+                parsers.append(parser)
+                schedule = default_scheduler
+                if 'schedule' in data:
+                    if type(data['schedule']) is dict:
+                        schedule = base.Schedule(data['schedule'])
+                    elif data['schedule'] in schedules:
+                        schedule = schedules[data['schedule']]
+
+                if not schedule.is_trigger(now, parser):
+                    logging.debug("Skipping feed \"%s\"", data['name'])
+                    continue
+
+                logging.info("Processing feed \"%s\"", data['name'])
                 items = parser.parse()
 
                 if 'filter' in data:
-                    filter_item = ItemFilter.subclass(data['filter']['type'])(data['filter'])
+                    filter_item = base.ItemFilter.subclass(data['filter']['type'])(data['filter'])
                     items = [item for item in items if filter_item.filter(item)]
 
                 output_params = default_output.copy()
                 if 'output' in data:
                     output_params.update(data['output'])
 
-                output = OutputProcessor.subclass(output_params['type'])(cache, output_params)
+                output = base.OutputProcessor.subclass(output_params['type'])(cache, output_params)
                 logging.debug('Using %s output processor', output.__class__.__name__)
                 for item in items:
                     output.process(item)
                     pass
+
+                parser.last_timestamp = now
             except StandardError:
                 logging.exception('Error while processing feed "%s"', data['name'])
+
+        storage.put('timestamps', {x.instance_name: x.last_timestamp for x in parsers})
         cache.save()
+        storage.save()
         pass
 
 

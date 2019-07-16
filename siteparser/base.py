@@ -38,7 +38,7 @@ class Map(dict):
 
 
 class Item(object):
-    _attributes = ['id', 'title', 'body', 'src', 'category', 'attachment', 'lifetime', 'data']
+    _attributes = ['id', 'title', 'body', 'src', 'category', 'attachments', 'lifetime', 'data']
 
     def __init__(self, **kwargs):
         self.__data__ = kwargs

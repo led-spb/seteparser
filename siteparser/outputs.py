@@ -1,5 +1,6 @@
 import requests
 import base
+from cStringIO import StringIO
 try:
     import youtube_dl
 except ImportError:
@@ -51,21 +52,30 @@ class TelegramOutput(base.OutputProcessor):
                 item.data['message_id'] = message_id
                 break
 
-        # send video
-        """
-        if download_video and 'youtube_dl' in dir():
-           filename = self.download_video(item.src)
-           video = {
-             'chat_id': self.param('chat_id'),
-             'caption': item.title
-           }
-           req = self.session.post(
-                  'https://api.telegram.org/bot%s/sendVideo' % self.param('token'),
-                  params = video,
-                  files = { 'video': (filename, open(filename,'rb'), 'video/mp4') }
-           )
-           req.raise_for_status()
-           os.remove( filename )"""
+        # send attachments
+        for attach in item.attachments or []:
+            if attach.endswith('.jpg') or attach.endswith('.png') or attach.endswith('.gif'):
+                image = self.session.get(attach)
+                self.session.post(
+                    'https://api.telegram.org/bot%s/sendPhoto' % (self.param('token')),
+                    data={
+                        'chat_id': self.param('chat_id'),
+                        'disable_notification': True
+                    },
+                    files={'photo': StringIO(image.content)}
+                )
+            else:
+                message = {
+                    'chat_id': self.param('chat_id'),
+                    'parse_mode': 'HTML',
+                    'disable_notification': True,
+                    'text': attach
+                }
+                self.session.post(
+                    'https://api.telegram.org/bot%s/sendMessage' % (self.param('token')),
+                    json=message
+                )
+            pass
         return True
 
     def download_supported(self, url):

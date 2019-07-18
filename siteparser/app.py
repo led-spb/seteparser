@@ -76,7 +76,7 @@ class Application(object):
         return
 
     def parse_arguments(self):
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(description='%(prog)s: '+ __version__)
 
         parser.add_argument("--version", action='version', version='%(prog)s '+ __version__)
         parser.add_argument("-v", action="store_const", const=1, dest="debug")

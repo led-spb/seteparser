@@ -1,4 +1,5 @@
 import requests
+import json
 import base
 from cStringIO import StringIO
 try:
@@ -53,18 +54,20 @@ class TelegramOutput(base.OutputProcessor):
                 break
 
         # send attachments
+        media_group = []
+        files = {}
         for attach in item.attachments or []:
             if attach.endswith('.jpg') or attach.endswith('.png') or attach.endswith('.gif'):
-                image = self.session.get(attach)
-                self.session.post(
-                    'https://api.telegram.org/bot%s/sendPhoto' % (self.param('token')),
-                    data={
-                        'chat_id': self.param('chat_id'),
-                        'disable_notification': True
-                    },
-                    files={'photo': StringIO(image.content)}
-                )
+                # Collect all photos - they will be send via media group
+                image_content = self.session.get(attach)
+                file_id = "media_%03d" % (len(media_group) + 1)
+                media_group.append({
+                    'type': 'photo',
+                    'media': 'attach://%s' % file_id
+                })
+                files[file_id] = StringIO(image_content.content)
             else:
+                # All others attachments send via direct link
                 message = {
                     'chat_id': self.param('chat_id'),
                     'parse_mode': 'HTML',
@@ -76,6 +79,17 @@ class TelegramOutput(base.OutputProcessor):
                     json=message
                 )
             pass
+
+        if len(media_group) > 0:
+            self.session.post(
+                'https://api.telegram.org/bot%s/sendMediaGroup' % (self.param('token')),
+                data={
+                    'chat_id': self.param('chat_id'),
+                    'disable_notification': True,
+                    'media': json.dumps(media_group)
+                },
+                files=files
+            )
         return True
 
     def download_supported(self, url):

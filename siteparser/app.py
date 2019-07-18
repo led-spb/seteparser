@@ -10,7 +10,7 @@ import time
 import base
 from parsers import CssParser, SimpleParser
 from outputs import TelegramOutput
-
+from _version import __version__
 
 class Loader(yaml.Loader):
     def __init__(self, stream):
@@ -78,6 +78,7 @@ class Application(object):
     def parse_arguments(self):
         parser = argparse.ArgumentParser()
 
+        parser.add_argument("--version", action='version', version='%(prog)s '+ __version__)
         parser.add_argument("-v", action="store_const", const=1, dest="debug")
         parser.add_argument("-c", "--config", type=file, default="siteparser.yaml")
         args = parser.parse_args()

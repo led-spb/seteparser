@@ -4,7 +4,7 @@ import siteparser as module
 
 setuptools.setup(
     name=module.name,
-    version=module.version,
+    version=module.__version__,
     author="Alexey Ponimash",
     author_email="alexey.ponimash@gmail.com",
     packages=setuptools.find_packages(),

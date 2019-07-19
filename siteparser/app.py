@@ -12,6 +12,7 @@ from parsers import CssParser, SimpleParser
 from outputs import TelegramOutput
 from _version import __version__
 
+
 class Loader(yaml.Loader):
     def __init__(self, stream):
         self._root = os.path.split(stream.name)[0]
@@ -76,7 +77,7 @@ class Application(object):
         return
 
     def parse_arguments(self):
-        parser = argparse.ArgumentParser(description='%(prog)s: '+ __version__)
+        parser = argparse.ArgumentParser(description='%(prog)s: ' + __version__)
 
         parser.add_argument("--version", action='version', version='%(prog)s '+ __version__)
         parser.add_argument("-v", action="store_const", const=1, dest="debug")

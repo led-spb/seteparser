@@ -2,9 +2,9 @@ import lxml.cssselect
 import lxml.etree
 import lxml.html
 import base
+import utils
 
-
-class SimpleParser(base.SiteParser):
+class SimpleParser(base.SiteParser, utils.ParserUtils):
     name = "simple"
 
     def etree(self, string):
@@ -16,7 +16,7 @@ class SimpleParser(base.SiteParser):
 
         if self.param('url') is not None:
             # make request
-            response = self.make_request()
+            response = self.request()
             # try to parse response as element tree
             tree = None
             try:

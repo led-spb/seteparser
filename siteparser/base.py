@@ -6,18 +6,7 @@ import requests
 import cookielib
 import hashlib
 import humanfriendly
-from jinja2 import Environment, Template
-
-
-def regex_replace(s, find, replace):
-    return re.sub(find, replace, s)
-
-
-class Context(object):
-    jinja = Environment()
-
-
-Context.jinja.filters['regex_replace'] = regex_replace
+from utils import ParserUtils
 
 
 class Map(dict):
@@ -144,7 +133,7 @@ class SiteParser(Configurable, SelfConstruct):
             self.last_timestamp = self.storage.get('timestamps')[self.instance_name]
         self.items = []
 
-    def make_request(self, url=None, data=None, headers=None):
+    def request(self, url=None, data=None, headers=None):
         url = url or self.param('url')
         data = data or self.param('data')
 
@@ -166,11 +155,6 @@ class SiteParser(Configurable, SelfConstruct):
     def parse(self):
         self.items = []
         return self.items
-
-    def md5(self, raw):
-        h = hashlib.md5()
-        h.update(raw)
-        return h.hexdigest()
 
 
 class ItemFilter(Configurable, SelfConstruct):
@@ -208,7 +192,7 @@ class KeyStorage(object):
         try:
             self.storage = json.load(open(self.filename, "rt"))
             if type(self.storage) is not dict:
-               self.storage = {}
+                self.storage = {}
         except StandardError:
             pass
 
@@ -282,12 +266,13 @@ class OutputProcessor(Configurable, SelfConstruct):
 """Category: {{item.category}}
 Title: {{item.title}}
 Body: {{item.body}}
+Attachs {{item.attachments}}
 Link: {{item.src}}"""
 
     def __init__(self, cache, params=None):
         Configurable.__init__(self, params)
         self.cache = cache
-        self.template = Context.jinja.from_string(self.param("template", self.default_template))
+        self.template = ParserUtils.jinja.from_string(self.param("template", self.default_template))
         self.timeout = int(self.param('timeout', -1))
         self.once = self.param('once', False)
 

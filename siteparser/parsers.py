@@ -4,6 +4,7 @@ import lxml.html
 import base
 import utils
 
+
 class SimpleParser(base.SiteParser, utils.ParserUtils):
     name = "simple"
 

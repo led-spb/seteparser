@@ -266,13 +266,15 @@ class OutputProcessor(Configurable, SelfConstruct):
 """Category: {{item.category}}
 Title: {{item.title}}
 Body: {{item.body}}
-Attachs {{item.attachments}}
+{%- for attach in item.attachments or [] %}
+{% if loop.index == 1 %}Attachments:{% endif %}
+{{attach}}{%- endfor %}
 Link: {{item.src}}"""
 
     def __init__(self, cache, params=None):
         Configurable.__init__(self, params)
         self.cache = cache
-        self.template = ParserUtils.jinja.from_string(self.param("template", self.default_template))
+        self.template = ParserUtils.compile_template(self.param('template', self.default_template))
         self.timeout = int(self.param('timeout', -1))
         self.once = self.param('once', False)
 
@@ -281,7 +283,7 @@ Link: {{item.src}}"""
             if not self.once or not self.cache.check(item):
                 self.output(item)
         except StandardError:
-            logging.exception("output exception")
+            logging.exception('output exception')
             return False
         self.cache.add(item)
         return True

@@ -54,9 +54,12 @@ class Loader(yaml.Loader):
                 return None
         return current_value
 
+    yaml.Loader.add_constructor('!secret', secret)
+    yaml.Loader.add_constructor('!include', include)
 
-Loader.add_constructor('!secret', Loader.secret)
-Loader.add_constructor('!include', Loader.include)
+
+#Loader.add_constructor('!secret', Loader.secret)
+#Loader.add_constructor('!include', Loader.include)
 
 
 class Application(object):

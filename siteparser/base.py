@@ -136,15 +136,18 @@ class SiteParser(Configurable, SelfConstruct):
     def request(self, url=None, data=None, headers=None):
         url = url or self.param('url')
         data = data or self.param('data')
+        method = self.param('method', 'GET' if data is None else 'POST')
 
         charset = self.param('encoding', 'utf-8')
         req_headers = {'Accept-Charset': charset}
         req_headers.update(headers or self.param('headers') or {})
 
-        if data is not None:
-            response = self.session.post(url, headers=req_headers, data=data)
-        else:
-            response = self.session.get(url, headers=req_headers)
+        response = self.session.request(
+            method=method, url=url,
+            params=data if method == 'GET' else None,
+            data=data if method == 'POST' else None,
+            headers=req_headers
+        )
         logging.debug(response.text)
         return response
 
